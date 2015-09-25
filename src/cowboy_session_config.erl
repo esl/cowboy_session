@@ -47,15 +47,10 @@ update_storage(Value) ->
 	end.
 
 get(Key) ->
-	gen_server:call(?MODULE, {get, Key}).
+	get(Key, undefined).
 
 get(Key, Default) ->
-	case ?MODULE:get(Key) of
-		{ok, Value} ->
-			{ok, Value};
-		{error, not_found} ->
-			{ok, Default}
-	end.
+	gen_server:call(?MODULE, {get, Key, Default}).
 
 %% ===================================================================
 %% Gen_server callbacks
@@ -64,13 +59,12 @@ get(Key, Default) ->
 init([]) ->
 	{ok, ?DEFAULT}.
 
-handle_call({get, Key}, _From, State) ->
-	case lists:keyfind(Key, 1, State) of
-		{Key, Value} ->
-			{reply, {ok, Value}, State};
-		false ->
-			{reply, {error, not_found}, State}
-	end;
+handle_call({get, Key, Default}, _From, State) ->
+	Result = case lists:keyfind(Key, 1, State) of
+		{_, Value} -> Value;
+		_ -> Default
+	end,
+	{reply, Result, State};
 handle_call(_Request, _From, State) ->
 	{reply, ignored, State}.
 
